@@ -62,9 +62,19 @@ private:
 	/// </summary>
 	void ConstructHelper(vector<Station>& stations, TreeNode& node, unsigned depth);
 
+	/// <summary>
+	/// 遍历某个结点
+	/// </summary>
+	vector<Station> TraverseNode(TreeNode node);
+
 public: 
 	// 根据文件来构建四叉树
 	QuadTree(string fileName);
+
+	/// <summary>
+	/// 遍历树的某个方向, 其中index为0,1,2,3,分别表示左下角（西南）、右下角（东南）、右上角（东北）、左上角（西北）
+	/// </summary>
+	vector<Station> TraverseOneDirection(int index);
 
 	QuadTree() {
 		rootNode.isLeaf = true;

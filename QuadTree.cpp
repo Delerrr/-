@@ -2,17 +2,32 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#define DEBUG
 /// <summary>
 /// 判断点point是否在leftBottom和rightTop组成的区域里
 /// </summary>
 /// <param name="point">需要判断的点的坐标</param>
 /// <param name="leftBottom">区域左下角坐标</param>
 /// <param name="rightTop">区域右上角坐标</param>
-bool IsInRegion(Point2 point, Point2 leftBottom, Point2 rightTop) {
+bool IsInRegion(Point2 point, Point2 leftBottom, Point2 rightTop, int index) {
 	if (leftBottom.x > rightTop.x || leftBottom.y > rightTop.y) throw "区域参数错误";
 
-	return point.x >= leftBottom.x && point.y >= leftBottom.y
-		&& point.x < rightTop.x && point.y < rightTop.y;
+	//为考虑边界情况（point恰好在两区域的边界线处），需要分四种情况讨论
+	bool ret = point.x >= leftBottom.x && point.y >= leftBottom.y && point.x < rightTop.x && point.y < rightTop.y;
+	switch (index) {
+	case 0:
+		break;
+	case 1:
+		ret = point.x >= leftBottom.x && point.y >= leftBottom.y && point.x <= rightTop.x && point.y < rightTop.y;
+		break;
+	case 2:
+		ret = point.x >= leftBottom.x && point.y >= leftBottom.y && point.x <= rightTop.x && point.y <= rightTop.y;
+		break;
+	case 3:
+		ret = point.x >= leftBottom.x && point.y >= leftBottom.y && point.x < rightTop.x&& point.y <= rightTop.y;
+		break;
+	}
+	return ret;
 }
 
 /// <summary>
@@ -71,6 +86,7 @@ QuadTree::QuadTree(string fileName) {
 			>> comma
 			>> inputStation.coordinate.y;
 	}
+	ifs.close();
 
 	rootNode.leftBottomBorder.x = (*min_element(stations.begin(), stations.end(), XComp)).coordinate.x;
 	rootNode.leftBottomBorder.y = (*min_element(stations.begin(), stations.end(), YComp)).coordinate.y;
@@ -111,22 +127,89 @@ void QuadTree::ConstructHelper(vector<Station>& stations, TreeNode& node, unsign
 
 	for (Station i : stations) {
 		for (int j = 0; j < 4; ++j) {
-			if (IsInRegion(i.coordinate, node.subNodes[j]->leftBottomBorder, node.subNodes[j]->rightTopBorder)) {
+			if (IsInRegion(i.coordinate, node.subNodes[j]->leftBottomBorder, node.subNodes[j]->rightTopBorder, j)) {
 				substations[j].push_back(i);
+#ifdef DEBUG
+				//cout << j <<endl;
+#endif
 				continue;
 			}
 		}
 	}
+#ifdef DEBUG
+	//if (depth == 0) {
+	//	unsigned num1 = substations[0][0].index;
+	//	ofstream ofs("DEBUG_1.txt");
+	//	for (vector<Station> i : substations) {
+	//		for (Station j : i) {
+	//			ofs << j.index << endl;
+	//		}
+	//	}
 
+	//	bool find = false;
+	//	int k = 1;
+	//	for (; k <= 7344; ++k) {
+	//		find = false;
+	//		for (vector<Station> i : substations) {
+	//			for (Station j : i) {
+	//				if (j.index == k) {
+	//					find = true;
+	//					break;
+	//				}
+	//			}
+	//			if (find) break;
+	//		}
+	//	if (!find)
+	//		cout << k << " oops!" << endl;
+	//	}
+	//}
+#endif
 	for (int i = 0; i < 4; ++i) {
 		ConstructHelper(substations[i], *(node.subNodes[i]), depth + 1);
-	}
+	}		
 }
 
+/// <summary>
+/// 遍历某个结点
+/// </summary>
+vector<Station> QuadTree::TraverseNode(TreeNode node) {
+	if (node.isLeaf) {
+		return node.stations;
+#ifdef DEBUG
+		
+#endif
+	}
+
+	vector<Station> ret;
+	for (TreeNode* i : node.subNodes) {
+		vector<Station> temp = TraverseNode(*i);
+		ret.insert(ret.end(), temp.begin(), temp.end());
+	}
+
+	return ret;
+}
+
+
+/// <summary>
+/// 遍历树的某个方向
+/// </summary>
+/// <param name="index">为0,1,2,3, 分别表示左下角（西南）、右下角（东南）、右上角（东北）、左上角（西北）</param>
+/// <returns></returns>
+vector<Station> QuadTree::TraverseOneDirection(int index) {
+	if (index > 3 || index < 0) throw "index 不合理";
+	TraverseNode(*(rootNode.subNodes[index]));
+}
 
 int main() {
 	cout << "输入文件名\n";
 	string filename;
 	cin >> filename;
 	QuadTree t(filename);
+	vector<Station> res;
+	res = t.TraverseOneDirection(0);
+	res = t.TraverseOneDirection(1);
+	res = t.TraverseOneDirection(2);
+	res = t.TraverseOneDirection(3);
+	cout << "ok";
+
 }
