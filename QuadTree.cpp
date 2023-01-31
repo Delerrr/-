@@ -3,6 +3,9 @@
 #include <fstream>
 #include <algorithm>
 #define DEBUG
+#ifdef DEBUG
+int times = 0;
+#endif
 /// <summary>
 /// 判断点point是否在leftBottom和rightTop组成的区域里
 /// </summary>
@@ -129,41 +132,10 @@ void QuadTree::ConstructHelper(vector<Station>& stations, TreeNode& node, unsign
 		for (int j = 0; j < 4; ++j) {
 			if (IsInRegion(i.coordinate, node.subNodes[j]->leftBottomBorder, node.subNodes[j]->rightTopBorder, j)) {
 				substations[j].push_back(i);
-#ifdef DEBUG
-				//cout << j <<endl;
-#endif
 				continue;
 			}
 		}
 	}
-#ifdef DEBUG
-	//if (depth == 0) {
-	//	unsigned num1 = substations[0][0].index;
-	//	ofstream ofs("DEBUG_1.txt");
-	//	for (vector<Station> i : substations) {
-	//		for (Station j : i) {
-	//			ofs << j.index << endl;
-	//		}
-	//	}
-
-	//	bool find = false;
-	//	int k = 1;
-	//	for (; k <= 7344; ++k) {
-	//		find = false;
-	//		for (vector<Station> i : substations) {
-	//			for (Station j : i) {
-	//				if (j.index == k) {
-	//					find = true;
-	//					break;
-	//				}
-	//			}
-	//			if (find) break;
-	//		}
-	//	if (!find)
-	//		cout << k << " oops!" << endl;
-	//	}
-	//}
-#endif
 	for (int i = 0; i < 4; ++i) {
 		ConstructHelper(substations[i], *(node.subNodes[i]), depth + 1);
 	}		
@@ -174,15 +146,19 @@ void QuadTree::ConstructHelper(vector<Station>& stations, TreeNode& node, unsign
 /// </summary>
 vector<Station> QuadTree::TraverseNode(TreeNode node) {
 	if (node.isLeaf) {
-		return node.stations;
 #ifdef DEBUG
-		
+		//for (Station i : node.stations) cout << i.index << endl;
 #endif
+		return node.stations;
 	}
 
 	vector<Station> ret;
 	for (TreeNode* i : node.subNodes) {
 		vector<Station> temp = TraverseNode(*i);
+#ifdef DEBUG
+				times++;
+			cout << times << endl;
+#endif // DEBUG
 		ret.insert(ret.end(), temp.begin(), temp.end());
 	}
 
@@ -197,7 +173,7 @@ vector<Station> QuadTree::TraverseNode(TreeNode node) {
 /// <returns></returns>
 vector<Station> QuadTree::TraverseOneDirection(int index) {
 	if (index > 3 || index < 0) throw "index 不合理";
-	TraverseNode(*(rootNode.subNodes[index]));
+	return TraverseNode(*(rootNode.subNodes[index]));
 }
 
 int main() {
@@ -205,11 +181,6 @@ int main() {
 	string filename;
 	cin >> filename;
 	QuadTree t(filename);
-	vector<Station> res;
-	res = t.TraverseOneDirection(0);
-	res = t.TraverseOneDirection(1);
-	res = t.TraverseOneDirection(2);
-	res = t.TraverseOneDirection(3);
+	vector<Station> res(t.TraverseOneDirection(0));
 	cout << "ok";
-
 }
