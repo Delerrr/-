@@ -2,36 +2,6 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#define DEBUG
-#ifdef DEBUG
-int times = 0;
-#endif
-/// <summary>
-/// 判断点point是否在leftBottom和rightTop组成的区域里
-/// </summary>
-/// <param name="point">需要判断的点的坐标</param>
-/// <param name="leftBottom">区域左下角坐标</param>
-/// <param name="rightTop">区域右上角坐标</param>
-bool IsInRegion(Point2 point, Point2 leftBottom, Point2 rightTop, int index) {
-	if (leftBottom.x > rightTop.x || leftBottom.y > rightTop.y) throw "区域参数错误";
-
-	//为考虑边界情况（point恰好在两区域的边界线处），需要分四种情况讨论
-	bool ret = point.x >= leftBottom.x && point.y >= leftBottom.y && point.x < rightTop.x && point.y < rightTop.y;
-	switch (index) {
-	case 0:
-		break;
-	case 1:
-		ret = point.x >= leftBottom.x && point.y >= leftBottom.y && point.x <= rightTop.x && point.y < rightTop.y;
-		break;
-	case 2:
-		ret = point.x >= leftBottom.x && point.y >= leftBottom.y && point.x <= rightTop.x && point.y <= rightTop.y;
-		break;
-	case 3:
-		ret = point.x >= leftBottom.x && point.y >= leftBottom.y && point.x < rightTop.x&& point.y <= rightTop.y;
-		break;
-	}
-	return ret;
-}
 
 /// <summary>
 ///判断输入是否结束
@@ -78,7 +48,7 @@ QuadTree::QuadTree(string fileName) {
 	{
 		//处理逗号
 		ifs >> comma
-			>> inputStation.type
+			>> inputStation.stationType
 			>> inputStation.signalStrength
 			>> comma
 			>> inputStation.index;
@@ -146,19 +116,12 @@ void QuadTree::ConstructHelper(vector<Station>& stations, TreeNode& node, unsign
 /// </summary>
 vector<Station> QuadTree::TraverseNode(TreeNode node) {
 	if (node.isLeaf) {
-#ifdef DEBUG
-		//for (Station i : node.stations) cout << i.index << endl;
-#endif
 		return node.stations;
 	}
 
 	vector<Station> ret;
 	for (TreeNode* i : node.subNodes) {
 		vector<Station> temp = TraverseNode(*i);
-#ifdef DEBUG
-				times++;
-			cout << times << endl;
-#endif // DEBUG
 		ret.insert(ret.end(), temp.begin(), temp.end());
 	}
 
@@ -171,16 +134,79 @@ vector<Station> QuadTree::TraverseNode(TreeNode node) {
 /// </summary>
 /// <param name="index">为0,1,2,3, 分别表示左下角（西南）、右下角（东南）、右上角（东北）、左上角（西北）</param>
 /// <returns></returns>
-vector<Station> QuadTree::TraverseOneDirection(int index) {
-	if (index > 3 || index < 0) throw "index 不合理";
-	return TraverseNode(*(rootNode.subNodes[index]));
+vector<Station> QuadTree::TraverseTreeByOneDirection(int index) {
+	return TraverseNodeByOneDirection(rootNode, index);
 }
 
-int main() {
-	cout << "输入文件名\n";
-	string filename;
-	cin >> filename;
-	QuadTree t(filename);
-	vector<Station> res(t.TraverseOneDirection(0));
-	cout << "ok";
+/// <summary>
+/// 遍历某结点的某个方向
+/// </summary>
+/// <param name="node">要遍历的基准结点</param>
+/// <param name="index">方向，为0,1,2,3, 分别表示左下角（西南）、右下角（东南）、右上角（东北）、左上角（西北）</param>
+/// <returns></returns>
+vector<Station> QuadTree::TraverseNodeByOneDirection(TreeNode node, int index) {
+	if (index > 3 || index < 0) throw "index 不合理";
+	return TraverseNode(*(node.subNodes[index]));
 }
+
+/// <summary>
+/// 析构函数的辅助函数
+/// </summary>
+/// <param name="node"></param>
+void QuadTree::DestructHelper(TreeNode node) {
+	if (node.isLeaf) {
+		return;
+	}
+
+	for (TreeNode* subNodePtr : node.subNodes) {
+		DestructHelper(*subNodePtr);
+		delete subNodePtr;
+	}
+}
+
+int times = 0;
+/// <summary>
+/// 查找函数的辅助函数
+/// </summary>
+vector<Station> QuadTree::FindHelper(Point2 leftBottom, Point2 rightTop, TreeNode node) {
+	times++;
+	cout << "查找次数：" << times << endl;
+	vector<Station> ret;
+	if (node.isLeaf) {
+		ret.assign(node.stations.begin(), node.stations.end());
+	} else {
+		for (TreeNode* subNode : node.subNodes) {
+			//如果子节点区域和被查找区域有重叠，则查找子节点，否则不查找
+			if (IsOverlapped(subNode->leftBottomBorder, subNode->rightTopBorder, leftBottom, rightTop)) {
+				vector<Station> temp(FindHelper(leftBottom, rightTop, *subNode));
+				ret.insert(ret.end(), temp.begin(), temp.end());
+			}
+		}
+	}
+
+	return ret;
+}
+
+/// <summary>
+/// 给定矩形区域，查找该矩形区域内的站点
+/// </summary>
+vector<Station> QuadTree::Find(Point2 leftBottom, Point2 rightTop) {
+ 	return FindHelper(leftBottom, rightTop, rootNode);
+}
+ 
+int main() {
+	string fileName;
+	cout << "input file name:\n";
+	cin >> fileName;
+	QuadTree t(fileName);
+	while (true) {
+		Point2 leftBottom, rightTop;
+		cin >> leftBottom.x >> leftBottom.y >> rightTop.x >> rightTop.y;
+		times = 0;
+		vector<Station> res(t.Find(leftBottom, rightTop));
+		cout << "查找结束, res大小：" << res.size() << endl;
+	}
+}
+
+
+
