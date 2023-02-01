@@ -6,7 +6,7 @@
 /// <summary>
 ///判断输入是否结束
 /// </summary>
-bool EndInput(Point2 inputPoint) {
+bool EndInput(const Point2& inputPoint) {
 	const double EPSILON = 0.0001;
 	return fabs(inputPoint.x + 1) < EPSILON && 
 			fabs(inputPoint.y + 1) < EPSILON;
@@ -15,17 +15,23 @@ bool EndInput(Point2 inputPoint) {
 /// <summary>
 //比较横坐标
 /// </summary>
-bool XComp(Station arg1, Station arg2) {
+bool XComp(const Station& arg1,const Station& arg2) {
 	return arg1.coordinate.x < arg2.coordinate.x;
 }
 
 /// <summary>
 //比较纵坐标
 /// </summary>
-bool YComp(Station arg1, Station arg2) {
+bool YComp(const Station& arg1,const Station& arg2) {
 	return arg1.coordinate.y < arg2.coordinate.y;
 }
 
+/// <summary>
+/// 比较信号强度
+/// </summary>
+bool SignalComp(const Station& arg1,const Station& arg2) {
+	return arg1.signalStrength < arg2.signalStrength;
+}
 QuadTree::QuadTree(string fileName) {
 	ifstream ifs(fileName);
 	if (!ifs.is_open()) {
@@ -61,10 +67,13 @@ QuadTree::QuadTree(string fileName) {
 	}
 	ifs.close();
 
+
 	rootNode.leftBottomBorder.x = (*min_element(stations.begin(), stations.end(), XComp)).coordinate.x;
 	rootNode.leftBottomBorder.y = (*min_element(stations.begin(), stations.end(), YComp)).coordinate.y;
 	rootNode.rightTopBorder.x = (*max_element(stations.begin(), stations.end(), XComp)).coordinate.x;
 	rootNode.rightTopBorder.y = (*max_element(stations.begin(), stations.end(), YComp)).coordinate.y;
+
+	maxBaseSignalStrength = (*max_element(stations.begin(), stations.end(), SignalComp)).signalStrength;
 
 	ConstructHelper(stations, rootNode, rootNode.depth);
 }
@@ -164,13 +173,10 @@ void QuadTree::DestructHelper(TreeNode node) {
 	}
 }
 
-int times = 0;
 /// <summary>
 /// 查找函数的辅助函数
 /// </summary>
 vector<Station> QuadTree::FindHelper(Point2 leftBottom, Point2 rightTop, TreeNode node) {
-	times++;
-	cout << "查找次数：" << times << endl;
 	vector<Station> ret;
 	if (node.isLeaf) {
 		ret.assign(node.stations.begin(), node.stations.end());
@@ -194,19 +200,6 @@ vector<Station> QuadTree::Find(Point2 leftBottom, Point2 rightTop) {
  	return FindHelper(leftBottom, rightTop, rootNode);
 }
  
-int main() {
-	string fileName;
-	cout << "input file name:\n";
-	cin >> fileName;
-	QuadTree t(fileName);
-	while (true) {
-		Point2 leftBottom, rightTop;
-		cin >> leftBottom.x >> leftBottom.y >> rightTop.x >> rightTop.y;
-		times = 0;
-		vector<Station> res(t.Find(leftBottom, rightTop));
-		cout << "查找结束, res大小：" << res.size() << endl;
-	}
-}
 
 
 

@@ -1,9 +1,10 @@
 #pragma once
 #include "QuadTree.h"
+
 /// <summary>
-/// 核心类，包括主要的计算功能
+/// 根据当前坐标寻找可连接的信号最好的站点(不考虑伪基站)
 /// </summary>
-
-//基准强度为1时的各区域基站的有效半径
-double const BaseRadius[4] = { 300.0, 1000.0, 5000.0, 40.0 };
-
+/// <param name="tree">存储所有站点的四叉树结构</param>
+/// <param name="position">该点的位置坐标</param>
+/// <returns>该站点, 如果没有可连接的站点，则返回站点的索引值为-1</returns>
+Station FindBestStation(QuadTree& tree, Point2& position);

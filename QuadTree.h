@@ -51,6 +51,8 @@ private:
 	vector<Station> FindHelper(Point2 leftBottom, Point2 rightTop, TreeNode node);
 
 public: 
+	double maxBaseSignalStrength = 1.0;
+
 	// 根据文件来构建四叉树
 	QuadTree(string fileName);
 
